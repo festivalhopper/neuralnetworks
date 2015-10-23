@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace NeuralNetwork {
     class Program {
         static readonly int dIn = 2;
-        static readonly int d1 = 3;
+        static readonly int d1 = 2;
         static readonly int dOut = 1;
         static double[] W1 = new double[dIn * d1];
         static double[] W1ChangeCache = initW1ChangeCache();
@@ -15,7 +15,7 @@ namespace NeuralNetwork {
         static double[] W2ChangeCache = new double[d1 * dOut];
         static double[] hiddenLayerOutput;
 
-        static readonly int epochs = 10;
+        static readonly int epochs = 100;
         static readonly double learningRate = 1;
 
         static void Main(string[] args) {
@@ -23,58 +23,31 @@ namespace NeuralNetwork {
         }
 
         private static void trainXor() {
-			// x1, x2, y
-            // 0 -> 1
-            // 1 -> 2
-            int[] trainingData = new int[] {
-                1, 1, 1,
-                1, 2, 2,
-                2, 1, 2,
-                2, 2, 1,
-            };
+			double[] trainingData = new double[] {
+                0.35, 0.9, 0.5,
+			};
             int trainingDataSetLength = 3;
 
             // Init weights
             //initWeights(W1, dIn, d1);
             //initWeights(W2, d1, dOut);
-            W1[0] = 0.3;
-            W1[1] = 0.2;
+            W1[0] = 0.1;
+            W1[1] = 0.4;
             W1[2] = 0.8;
-            W1[3] = 0.9;
-            W1[4] = 0.5;
-            W1[5] = 0.1;
-            W2[0] = 0.2;
-            W2[1] = 0.3;
-            W2[2] = 0.8;
+            W1[3] = 0.6;
+			W2[0] = 0.3;
+            W2[1] = 0.9;
 
             int trainingDataSets = trainingData.Length / trainingDataSetLength;
             for (int epoch = 1; epoch <= epochs; ++epoch) {
+                // Print epoch and weights information.
                 Console.WriteLine("*** Epoch " + epoch + " ***");
                 Console.WriteLine("W1:");
                 print(W1, d1);
                 Console.WriteLine("W2:");
                 print(W2, dOut);
-                for (int trainingDataSet = 0; trainingDataSet < trainingDataSets; ++trainingDataSet) {
-                    int startIndex = trainingDataSet * trainingDataSetLength;
-                    double[] x = new double[] {trainingData[startIndex], trainingData[startIndex + 1]};
-                    double y = f(x);
-                    double t = trainingData[startIndex + 2];
-                    
-                    // Online update
-                    //calcAndUpdateWeights(x, y, t);
 
-                    // Batch update, part 1
-                    calcAndCacheWeights(x, y, t);
-
-                    Console.WriteLine("x:");
-                    print(x, dIn);
-                    Console.WriteLine("y = f(x) = " + y);
-                    Console.WriteLine("t = " + t);
-                }
-
-                // Batch update, part 2
-                updateWeights();
-
+                // Calculate and print average error.
                 double errorSum = 0;
                 for (int trainingDataSet = 0; trainingDataSet < trainingDataSets; ++trainingDataSet) {
                     int startIndex = trainingDataSet * trainingDataSetLength;
@@ -85,6 +58,29 @@ namespace NeuralNetwork {
                     errorSum += (E >= 0 ? E : -E);
                 }
                 Console.WriteLine("Average error = " + (errorSum / trainingDataSets));
+
+                for (int trainingDataSet = 0; trainingDataSet < trainingDataSets; ++trainingDataSet) {
+                    int startIndex = trainingDataSet * trainingDataSetLength;
+                    double[] x = new double[] {trainingData[startIndex], trainingData[startIndex + 1]};
+                    double y = f(x);
+                    double t = trainingData[startIndex + 2];
+                    
+                    // Online update
+                    calcAndUpdateWeights(x, y, t);
+
+                    // Batch update, part 1
+                    // Not working too good this way, need a different stop criteria
+                    // than a fixed number of epochs (e.g. a small error value).
+                    //calcAndCacheWeights(x, y, t);
+
+                    Console.WriteLine("x:");
+                    print(x, dIn);
+                    Console.WriteLine("y = f(x) = " + y);
+                    Console.WriteLine("t = " + t);
+                }
+
+                // Batch update, part 2
+                //updateWeights();
             }
         }
 
