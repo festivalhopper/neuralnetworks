@@ -6,16 +6,26 @@ using System.Threading.Tasks;
 
 namespace NeuralNetwork {
     class Program {
+        // Size of input vector
         static readonly int dIn = 2;
+        // Size of hidden layer
         static readonly int d1 = 2;
+        // Size of output vector
         static readonly int dOut = 1;
+        // Weights matrix between input and hidden layer
         static double[] W1 = new double[dIn * d1];
+        // Weights change matrix for batch update mode
         static double[] W1ChangeCache = initW1ChangeCache();
+        // Weights matrix between hidden layer and output
         static double[] W2 = initW2ChangeCache();
+        // Weights change matrix for batch update mode
         static double[] W2ChangeCache = new double[d1 * dOut];
+        // Output values of the hidden layer neurons
         static double[] hiddenLayerOutput;
 
+        // How many times should we train the whole training set?
         static readonly int epochs = 100;
+        // Learning rate / alpha
         static readonly double learningRate = 1;
 
         static void Main(string[] args) {
@@ -62,10 +72,13 @@ namespace NeuralNetwork {
                 for (int trainingDataSet = 0; trainingDataSet < trainingDataSets; ++trainingDataSet) {
                     int startIndex = trainingDataSet * trainingDataSetLength;
                     double[] x = new double[] {trainingData[startIndex], trainingData[startIndex + 1]};
+                    // Forward pass: calculate output with current weights
                     double y = f(x);
+                    // Target output
                     double t = trainingData[startIndex + 2];
-                    
-                    // Online update
+
+                    // Calculate stochastic gradient descent.
+                    // Online weights update.
                     calcAndUpdateWeights(x, y, t);
 
                     // Batch update, part 1
@@ -84,7 +97,9 @@ namespace NeuralNetwork {
             }
         }
 
-        // g(x * W1) * W2
+        // Forward pass (calculate output)
+        // g(g(x * W1) * W2)
+        //
         // TODO: Apply g() to output as well? They do it in the tutorial
         // at https://www4.rgu.ac.uk/files/chapter3%20-%20bp.pdf.
         // Changes the results: Big jump in the first step, but takes longer
@@ -110,6 +125,7 @@ namespace NeuralNetwork {
         //    return y;
         //}
 
+        // Activation function
         // Logistic function / sigmoid
         // x = vector
         private static double[] g(double[] x) {
@@ -129,6 +145,7 @@ namespace NeuralNetwork {
         private static void initWeights(double[] W, int rows, int columns) {
             xavierInit(W, rows, columns);
         }
+        // Xavier initialization
         private static void xavierInit(double[] W, int rows, int columns) {
             Random r = new Random();
             double max = Math.Sqrt(6) / Math.Sqrt(rows + columns);
@@ -148,11 +165,11 @@ namespace NeuralNetwork {
         private static double deltaOutput(double y, double t) {
             return y * (1 - y) * (t - y);
         }
-
+        // Error function for hidden layer
         private static double deltaHidden(double dy, int i) {
             return hiddenLayerOutput[i] * (1 - hiddenLayerOutput[i]) * dy * W2[i];
         }
-
+        // Calculate stochastic gradient descent, update weights online.
         private static void calcAndUpdateWeights(double[] x, double y, double t) {
             // Output layer error gradient
             double dy = deltaOutput(y, t);
@@ -174,7 +191,7 @@ namespace NeuralNetwork {
                 }
             }
         }
-
+        // Calculate stochastic gradient descent, save weight changes to cache.
         private static void calcAndCacheWeights(double[] x, double y, double t) {
             // Output layer error gradient
             double dy = deltaOutput(y, t);
@@ -196,7 +213,7 @@ namespace NeuralNetwork {
                 }
             }
         }
-
+        // Apply cached weight changes, reset cache.
         private static void updateWeights() {
             for (int i = 0; i < W1.Length; ++i) {
                 W1[i] += W1ChangeCache[i];
@@ -207,11 +224,11 @@ namespace NeuralNetwork {
             initW1ChangeCache();
             initW2ChangeCache();
         }
-
+        // Reset W1 cache.
         private static double[] initW1ChangeCache() {
             return new double[dIn * d1];
         }
-
+        // Reset W2 cache.
         private static double[] initW2ChangeCache() {
             return new double[d1 * dOut];
         }
