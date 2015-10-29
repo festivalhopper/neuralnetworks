@@ -9,22 +9,31 @@ namespace NeuralNetwork {
         // Size of input vector
         static readonly int dIn = 2;
         // Size of hidden layer
-        static readonly int d1 = 2;
+        static readonly int d1 = 3;
         // Size of output vector
         static readonly int dOut = 1;
         // Weights matrix between input and hidden layer
         static double[] W1 = new double[dIn * d1];
         // Weights change matrix for batch update mode
         static double[] W1ChangeCache = initW1ChangeCache();
+        // Bias between input and hidden layer
+        static double[] b1 = new double[d1];
+        // Bias change vector for batch update mode
+        static double[] b1ChangeCache = initB1ChangeCache();
         // Weights matrix between hidden layer and output
         static double[] W2 = initW2ChangeCache();
         // Weights change matrix for batch update mode
         static double[] W2ChangeCache = new double[d1 * dOut];
+        // Bias between hidden layer and output
+        static double[] b2 = new double[dOut];
+        // Bias change vector for batch update mode
+        static double[] b2ChangeCache = initB2ChangeCache();
         // Output values of the hidden layer neurons
         static double[] hiddenLayerOutput;
 
         // How many times should we train the whole training set?
-        static readonly int epochs = 100;
+        //static readonly int epochs = 10000;
+        static readonly double errorTarget = 0.01;
         // Learning rate / alpha
         static readonly double learningRate = 1;
 
@@ -33,29 +42,45 @@ namespace NeuralNetwork {
         }
 
         private static void trainXor() {
-			double[] trainingData = new double[] {
-                0.35, 0.9, 0.5,
-			};
+            // x1, x2, y
+            int[] trainingData = new int[] {
+                0, 0, 0,
+                0, 1, 1,
+                1, 0, 1,
+                1, 1, 0,
+            };
             int trainingDataSetLength = 3;
 
             // Init weights
-            //initWeights(W1, dIn, d1);
-            //initWeights(W2, d1, dOut);
-            W1[0] = 0.1;
-            W1[1] = 0.4;
-            W1[2] = 0.8;
-            W1[3] = 0.6;
-			W2[0] = 0.3;
-            W2[1] = 0.9;
+            initWeights(W1, dIn, d1);
+            initWeights(W2, d1, dOut);
+            b1[0] = 1.0;
+            b1[1] = 1.0;
+            b1[2] = 1.0;
+            b2[0] = 1.0;
+            //W1[0] = 0.3;
+            //W1[1] = 0.2;
+            //W1[2] = 0.8;
+            //W1[3] = 0.9;
+            //W1[4] = 0.5;
+            //W1[5] = 0.1;
+            //W2[0] = 0.2;
+            //W2[1] = 0.3;
+            //W2[2] = 0.8;
 
             int trainingDataSets = trainingData.Length / trainingDataSetLength;
-            for (int epoch = 1; epoch <= epochs; ++epoch) {
+            double averageError = 1.0;
+            int epoch = 0;
+            //for (int epoch = 1; epoch <= epochs; ++epoch) {
+            while (averageError > errorTarget) {
+                ++epoch;
+                
                 // Print epoch and weights information.
-                Console.WriteLine("*** Epoch " + epoch + " ***");
-                Console.WriteLine("W1:");
-                print(W1, d1);
-                Console.WriteLine("W2:");
-                print(W2, dOut);
+                //Console.WriteLine("*** Epoch " + epoch + " ***");
+                //Console.WriteLine("W1:");
+                //print(W1, d1);
+                //Console.WriteLine("W2:");
+                //print(W2, dOut);
 
                 // Calculate and print average error.
                 double errorSum = 0;
@@ -67,7 +92,8 @@ namespace NeuralNetwork {
                     double E = y - t;
                     errorSum += (E >= 0 ? E : -E);
                 }
-                Console.WriteLine("Average error = " + (errorSum / trainingDataSets));
+                averageError = errorSum / trainingDataSets;
+                //Console.WriteLine("Average error = " + averageError);
 
                 for (int trainingDataSet = 0; trainingDataSet < trainingDataSets; ++trainingDataSet) {
                     int startIndex = trainingDataSet * trainingDataSetLength;
@@ -79,21 +105,32 @@ namespace NeuralNetwork {
 
                     // Calculate stochastic gradient descent.
                     // Online weights update.
-                    calcAndUpdateWeights(x, y, t);
+                    calcAndUpdateWeights(x, y, t, false);
 
                     // Batch update, part 1
-                    // Not working too good this way, need a different stop criteria
-                    // than a fixed number of epochs (e.g. a small error value).
-                    //calcAndCacheWeights(x, y, t);
+                    // Didn't get XOR approximation to work with batch update.
+                    //calcAndUpdateWeights(x, y, t, true);
 
-                    Console.WriteLine("x:");
-                    print(x, dIn);
-                    Console.WriteLine("y = f(x) = " + y);
-                    Console.WriteLine("t = " + t);
+                    //Console.WriteLine("x:");
+                    //print(x, dIn);
+                    //Console.WriteLine("y = f(x) = " + y);
+                    //Console.WriteLine("t = " + t);
                 }
 
                 // Batch update, part 2
                 //updateWeights();
+            }
+
+            Console.WriteLine("Result after " + epoch + " epochs:");
+            for (int trainingDataSet = 0; trainingDataSet < trainingDataSets; ++trainingDataSet) {
+                int startIndex = trainingDataSet * trainingDataSetLength;
+                double[] x = new double[] { trainingData[startIndex], trainingData[startIndex + 1] };
+                double y = f(x);
+                double t = trainingData[startIndex + 2];
+                Console.WriteLine("x:");
+                print(x, dIn);
+                Console.WriteLine("y = f(x) = " + y);
+                Console.WriteLine("t = " + t);
             }
         }
 
@@ -111,8 +148,8 @@ namespace NeuralNetwork {
         // Applying g() seems to make more than sense than not applying it.
         // But that's just me.
         private static double f(double[] x) {
-            hiddenLayerOutput = g(multiply(x, W1, 1, dIn, d1));
-            return g(multiply(hiddenLayerOutput, W2, 1, d1, dOut))[0];
+            hiddenLayerOutput = g(add(multiply(x, W1, 1, dIn, d1), b1, 1, d1));
+            return g(add(multiply(hiddenLayerOutput, W2, 1, d1, dOut), b2, 1, dOut))[0];
         }
 
         // ReLU
@@ -169,13 +206,24 @@ namespace NeuralNetwork {
         private static double deltaHidden(double dy, int i) {
             return hiddenLayerOutput[i] * (1 - hiddenLayerOutput[i]) * dy * W2[i];
         }
-        // Calculate stochastic gradient descent, update weights online.
-        private static void calcAndUpdateWeights(double[] x, double y, double t) {
+        // Calculate stochastic gradient descent.
+        // caching = false: update weights online
+        // caching = true: save weights to cache
+        private static void calcAndUpdateWeights(double[] x, double y, double t, bool caching) {
+            double[] myW1 = caching ? W1ChangeCache : W1;
+            double[] myW2 = caching ? W2ChangeCache : W2;
+            double[] myB1 = caching ? b1ChangeCache : b1;
+            double[] myB2 = caching ? b2ChangeCache : b2;
+
             // Output layer error gradient
             double dy = deltaOutput(y, t);
             // W2 weights update
-            for (int i = 0; i < W2.Length; ++i) {
-                W2[i] += learningRate * dy * hiddenLayerOutput[i];
+            for (int i = 0; i < myW2.Length; ++i) {
+                myW2[i] += learningRate * dy * hiddenLayerOutput[i];
+            }
+            // b2 update
+            for (int i = 0; i < myB2.Length; ++i) {
+                myB2[i] += learningRate * dy;
             }
 
             // Hidden layer error gradient
@@ -187,30 +235,12 @@ namespace NeuralNetwork {
             for (int i = 0; i < dIn; ++i) {
                 for (int j = 0; j < d1; ++j) {
                     // W1[i][j]
-                    W1[i * d1 + j] += learningRate * dh[j] * x[i];
+                    myW1[i * d1 + j] += learningRate * dh[j] * x[i];
                 }
             }
-        }
-        // Calculate stochastic gradient descent, save weight changes to cache.
-        private static void calcAndCacheWeights(double[] x, double y, double t) {
-            // Output layer error gradient
-            double dy = deltaOutput(y, t);
-            // W2 weights update
-            for (int i = 0; i < W2.Length; ++i) {
-                W2ChangeCache[i] += learningRate * dy * hiddenLayerOutput[i];
-            }
-
-            // Hidden layer error gradient
-            double[] dh = new double[d1];
-            for (int i = 0; i < d1; ++i) {
-                dh[i] = deltaHidden(dy, i);
-            }
-            // W1 weights update
-            for (int i = 0; i < dIn; ++i) {
-                for (int j = 0; j < d1; ++j) {
-                    // W1[i][j]
-                    W1ChangeCache[i * d1 + j] += learningRate * dh[j] * x[i];
-                }
+            // b1 update
+            for (int i = 0; i < myB1.Length; ++i) {
+                myB1[i] += learningRate * dh[i];
             }
         }
         // Apply cached weight changes, reset cache.
@@ -231,6 +261,26 @@ namespace NeuralNetwork {
         // Reset W2 cache.
         private static double[] initW2ChangeCache() {
             return new double[d1 * dOut];
+        }
+        // Reset b1 cache.
+        private static double[] initB1ChangeCache() {
+            return new double[d1];
+        }
+        // Reset b2 cache.
+        private static double[] initB2ChangeCache() {
+            return new double[dOut];
+        }
+
+        // TODO in-situ would be faster
+        private static double[] add(double[] A, double[] B, int rows, int columns) {
+            double[] C = new double[rows * columns];
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < columns; ++j) {
+                    int index = i * columns + j;
+                    C[index] = A[index] + B[index];
+                }
+            }
+            return C;
         }
 
         // A = n x m row-major matrix / vector
@@ -261,6 +311,15 @@ namespace NeuralNetwork {
             }
         }
 
+        private static void addTest() {
+            double[] A = new double[] { 1, 2, 3, 7, 8, 9 };
+            double[] B = new double[] { 5, 6, 7, 3, 4, 5 };
+            // Expected result:
+            //  6  8 10
+            // 10 12 14
+            double[] C = add(A, B, 2, 3);
+            print(C, 3);
+        }
         private static void multiplyTest() {
             double[] A = new double[] { 1, 4, 6 };
             double[] B = new double[] { 2, 3, 5, 8, 7, 9 };
