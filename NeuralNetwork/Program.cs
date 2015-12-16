@@ -45,6 +45,9 @@ namespace NeuralNetwork {
 
         private static void train() {
             // x1, x2, y
+            // Activation function leads to all output being
+            // <= 1, so we can currently only learn stuff
+            // with results <= 1.
             double[] trainingData = new double[] {
                 0.03, 0.13, 0.16,
                 0.03, 0.21, 0.24,
